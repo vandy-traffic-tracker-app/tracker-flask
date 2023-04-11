@@ -1,7 +1,8 @@
 from contextlib import nullcontext
 from sqlite3 import Date
-from flask import Flask
+from flask import Flask, jsonify
 from pymongo import MongoClient
+from bson import ObjectId
 import certifi
 import json
 
@@ -25,7 +26,7 @@ def getDataByLocation(locationID):
     for swipe in data:
         data_json.append(swipe)
 
-    return data_json
+    return jsonify(data_json)
 
 @app.route('/getAllSwipes')
 def getAllSwipes():
@@ -37,6 +38,7 @@ def getAllSwipes():
 
     return data_json
 
+@app.route('/getLastWeekSwipes')
 def getLastWeekSwipes():
     data_json = []
     data = swipes.aggregate([
@@ -49,7 +51,9 @@ def getLastWeekSwipes():
     for swipe in data:
         data_json.append(swipe)
 
-    return data_json
+    return json.dumps(data_json)
 
 def create_stream():
     return ""
+
+#print(getAllSwipes())
