@@ -1,5 +1,6 @@
 from contextlib import nullcontext
 from sqlite3 import Date, Timestamp
+from datetime import datetime, timedelta
 from flask import Flask, jsonify
 from pymongo import MongoClient
 from bson import ObjectId
@@ -58,8 +59,50 @@ def testDate():
 
     return str(ts)
 
+@app.route('/getLocationType/<string:locationID>')
+def getLocationType(locationID):
+    if (locationID == "Rec" or locationID == "Alumni"):
+        return "gym"
+    return "dining"
+
+@app.route('/getCurrentOccupancy/<string:locationID>')
+def getCurrentOccupancy(locationID):
+    from_date = datetime.now() - timedelta(hours = 1)
+    to_date = datetime.now()
+    ts = swipes.count_documents(
+        {"locationID": locationID},
+        {"Timestamp": {"$gte": from_date, "$lt": to_date}}
+    )
+    
+    return str(ts)
+
+@app.route('/getOccupancyByHour/<string:locationID>/<datetime:hour>')
+def getOccupancyByHour(locationID, hour):
+    from_date = hour - timedelta(hours = 1)
+    to_date = hour
+    ts = swipes.count_documents(
+        {"locationID": locationID},
+        {"Timestamp": {"$gte": from_date, "$lt": to_date}},
+    )
+    
+    return str(ts)
+
+
+# Not right implementation, can someone help me with this?  
+@app.route('/getAverageOccupancyByHourOnWeekday/<string:locationID>/<string:weekday>/<datetime:hour>')
+def getAverageOccupancyByHourOnWeekday(locationID, weekday, hour):
+    from_date = hour - timedelta(hours = 1)
+    to_date = hour
+    ts = swipes.count_documents(
+        {"locationID": locationID},
+        {"Weekday": weekday},
+        {"Timestamp": {"$gte": from_date, "$lt": to_date}},
+    )
+    
+    return str(ts)
+
 # getCurrentOccupancy(location_id)
 # getOccupancyByHour(locationID, hour)
 # getAverageOccupancy(locationID, weekday, hour)
 # getAverageOccupancy(location_id)
-# getBusyTimes(location_id)
+# getBusyTimes(location_id) 
