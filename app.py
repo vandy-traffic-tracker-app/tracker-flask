@@ -27,6 +27,20 @@ db = client.get_database("VandyTracker")
 locations = db.get_collection("Locations")
 swipes = db.get_collection("Fake_Data")
 
+daysOpen =  {
+        "Rec" :
+            list({"Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sum"}),
+        "Rand" :
+            ""
+}
+
+hours = {
+        "Rec" :
+        [6,11],
+        "Rand" :
+            ""
+}
+
 @app.route("/")
 def hello_world():
     return "<p>Hello, World!</p>"
@@ -70,16 +84,20 @@ def getLocationType(locationID):
 def getCurrentOccupancy(locationID):
     from_date = datetime.datetime.now() - timedelta(hours = 1)
     to_date = datetime.datetime.now()
-    ts = swipes.count_documents(
+    occupancy = swipes.count_documents(
         {"locationID": locationID, "Timestamp": {"$gte": from_date, "$lt": to_date}}
     )
     
-    return str(ts)
+    return json.dumps({"currentOccupancy":occupancy})
 
 @app.route('/getOccupancyByHour/<string:locationID>/<string:hour>')
 def getOccupancyByHour(locationID, hour):
-    from_date = hour - timedelta(hours = 1)
-    to_date = hour
+    time = datetime.strptime(hour, "%Y-%m-%dT%H:%M:%S.%f%z")
+    ts = time.timestamp()
+    #timestamp_str = "2023-04-15T10:44:40.000+00:00"
+
+    from_date = ts - timedelta(hours = 1)
+    to_date = time
     ts = swipes.count_documents(
         {"locationID": locationID,
         "Timestamp": {"$gte": from_date, "$lt": to_date}},
@@ -87,19 +105,62 @@ def getOccupancyByHour(locationID, hour):
     
     return str(ts)
 
-
 # Not right implementation, can someone help me with this?  
-@app.route('/getAverageOccupancyByHourOnWeekday/<string:locationID>/<string:weekday>/<string:hour>')
+@app.route('/getAverageOccupancyByHourOnWeekday/<string:locationID>/<string:weekday>/<int:hour>')
 def getAverageOccupancyByHourOnWeekday(locationID, weekday, hour):
-    from_date = hour - timedelta(hours = 1)
-    to_date = hour
-    ts = swipes.count_documents(
-        {"locationID": locationID},
-        {"Weekday": weekday},
-        {"Timestamp": {"$gte": from_date, "$lt": to_date}},
+
+    swipes_by_location_weekday_hour = swipes.find(
+        {
+            "locationID": locationID,
+            "Weekday": weekday,
+            "$expr": {
+                "$eq": 
+                [ {"$hour": "$Timestamp"}, hour - 1 ]
+            }
+        }
     )
+
+    count = swipes.count_documents(
+        {
+            "locationID": locationID,
+            "Weekday": weekday,
+            "$expr": {
+                "$eq": 
+                [ {"$hour": "$Timestamp"}, hour - 1 ]
+            }
+        }
+    )
+
+    zset = set()
+    for swipe in swipes_by_location_weekday_hour:
+        print(swipe)
+        zset.add(swipe['Timestamp'].date())
+
+    num_days = len(zset)
+    if num_days == 0:
+        return "No swipes in the specified time period"
     
-    return str(ts)
+    avg_occupancy = int(count / num_days)
+    return avg_occupancy
+
+@app.route('/getAverageOccupancyByWeekday/<string:locationID>/<string:weekday>')
+def getAverageOccupancyByWeekday(locationID, weekday):
+    data_json = []
+
+    if (weekday in daysOpen[locationID]):
+        open = hours[locationID][0]
+        close = hours[locationID][1]
+
+        for i in range(open + 1, close + 1):
+            avg = getAverageOccupancyByHourOnWeekday(locationID, weekday, i)
+            data_json.append({i : avg})
+
+    print(data_json)
+
+    return json.dumps(data_json)
+
+# Test call below:
+# print(getAverageOccupancyByHourOnWeekday('Rec', 'Sum', 23))
 
 # getCurrentOccupancy(location_id)
 # getOccupancyByHour(locationID, hour)
