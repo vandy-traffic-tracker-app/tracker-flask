@@ -29,16 +29,19 @@ swipes = db.get_collection("Fake_Data")
 
 daysOpen =  {
         "Rec" :
-            list({"Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sum"}),
+            {"Mon":[6,23], "Tues":[6,23], "Wed": [6,23], "Thurs":[6,23], "Fri":[6,22], "Sat":[8,20], "Sum":[12,23]},
         "Rand" :
-            ""
-}
-
-hours = {
-        "Rec" :
-        [6,11],
-        "Rand" :
-            ""
+            {"Mon":[7,15], "Tues":[7,15], "Wed":[7,15], "Thurs":[7,15], "Fri":[7,15]},
+        "Roth" :
+            {"Mon":[7,20], "Tues":[7,20], "Wed":[7,20], "Thurs":[7,20], "Fri":[7,20], "Sat":[9,20], "Sum":[9,20]},
+        "Zeppos" :
+            {"Mon":[7,20], "Tues":[7,20], "Wed":[7,20], "Thurs":[7,20], "Fri":[7,20], "Sat":[9,20], "Sum":[9,20]},
+        "Central" :
+            {"Mon":[8,24], "Tues":[8,24], "Wed":[8,24], "Thurs":[8,24], "Fri":[8,24], "Sat":[8,24], "Sum":[8,24]},
+        "Commons" :
+            {"Mon":[7,20], "Tues":[7,20], "Wed":[7,20], "Thurs":[7,20], "Fri":[7,20], "Sat":[9,20], "Sum":[9,20]},
+        "EBI" :
+            {"Mon":[7,20], "Wed":[7,20], "Thurs":[7,20], "Fri":[7,20], "Sat":[9,20], "Sum":[9,20]},
 }
 
 @app.route("/")
@@ -133,7 +136,6 @@ def getAverageOccupancyByHourOnWeekday(locationID, weekday, hour):
 
     zset = set()
     for swipe in swipes_by_location_weekday_hour:
-        print(swipe)
         zset.add(swipe['Timestamp'].date())
 
     num_days = len(zset)
@@ -148,14 +150,26 @@ def getAverageOccupancyByWeekday(locationID, weekday):
     data_json = []
 
     if (weekday in daysOpen[locationID]):
-        open = hours[locationID][0]
-        close = hours[locationID][1]
+        open = daysOpen[locationID][weekday][0]
+        close = daysOpen[locationID][weekday][1]
 
         for i in range(open + 1, close + 1):
             avg = getAverageOccupancyByHourOnWeekday(locationID, weekday, i)
             data_json.append({i : avg})
 
-    print(data_json)
+    return json.dumps(data_json)
+
+@app.route('/getAllAverageOccupancies/<string:locationID>')
+def getAllAverageOccupancies(locationID):
+    data_json = []
+    days = daysOpen[locationID]
+
+    if days is None:
+        return json.dumps(data_json)
+
+    for day in days:
+        weekdayOccupancies = getAverageOccupancyByWeekday(locationID, day)
+        data_json.append({day:weekdayOccupancies})
 
     return json.dumps(data_json)
 
