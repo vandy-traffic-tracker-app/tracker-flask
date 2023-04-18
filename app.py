@@ -140,7 +140,7 @@ def getAverageOccupancyByHourOnWeekday(locationID, weekday, hour):
 
     num_days = len(zset)
     if num_days == 0:
-        return "No swipes in the specified time period"
+        return 0
     
     avg_occupancy = int(count / num_days)
     return avg_occupancy
