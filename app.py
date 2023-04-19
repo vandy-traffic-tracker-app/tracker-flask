@@ -197,6 +197,62 @@ def getAllTotalOccupancies(locationID):
     return data_json
 
 # Test call below:
+@app.route('/api/getOccTodayByHour/<string:locationID>/<int:hour>')
+def getOccTodayByHour(locationID, hour):
+    date = datetime.datetime.now().date()
+    
+    count = swipes.count_documents(
+        {
+            "locationID": locationID,
+            "$expr": {
+                "$and": [
+                    {"$eq": [ {"$hour": "$Timestamp"}, hour - 1 ]},
+                    {"$eq": [ {"$dateToString": { "format": "%Y-%m-%d", "date": "$Timestamp" }}, str(date) ]}
+                ]
+            }
+        }
+    )  
+    return str(count)
+
+@app.route('/api/getOccTodayAl/<string:locationID>')
+def getOccTodayAll(locationID):
+    week_day = datetime.datetime.now().weekday()
+    week_arr =["Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sun"]
+    data_json = []
+
+    if (week_arr[week_day] in daysOpen[locationID]):
+        open = daysOpen[locationID][week_arr[week_day]][0]
+        close = daysOpen[locationID][week_arr[week_day]][1]
+
+        for i in range(open + 1, close + 1):
+            avg = getOccTodayByHour(locationID, i)
+            data_json.append({"time" : hours[i - 8], "occupancy" : avg})
+
+    return json.dumps(data_json)
+
+@app.route('/api/getOccForPopUp/<string:locationID>')
+def getOccForPopUp(locationID):
+    week_day = datetime.datetime.now().weekday()
+    week_arr =["Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sun"]
+    data_json = []
+    time = datetime.datetime.now().hour
+    
+    avg = getCurrentOccupancy(locationID)  
+    data_json.append({"time" : hours[time - 8], "occupancy" : avg})
+
+    if (week_arr[week_day] in daysOpen[locationID]):
+        open = daysOpen[locationID][week_arr[week_day]][0]
+        close = daysOpen[locationID][week_arr[week_day]][1]
+        
+        end = time + 5
+        if (end > close):
+            end = close
+
+        for i in range(time + 1, end + 1):
+            avg = getAverageOccupancyByHourOnWeekday(locationID, week_arr[week_day], i)
+            data_json.append({"time" : hours[i - 8], "occupancy" : avg})
+    
+    return json.dumps(data_json)
 # print(getAverageOccupancyByHourOnWeekday('Rec', 'Sun', 23))
 
 # getCurrentOccupancy(location_id)
