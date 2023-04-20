@@ -5,6 +5,8 @@ from datetime import datetime, timedelta
 from flask import Flask, jsonify
 from pymongo import MongoClient
 from bson import ObjectId
+from flask_cors import CORS
+
 import datetime
 import certifi
 import json
@@ -18,6 +20,7 @@ class MyEncoder(json.JSONEncoder): # pragma: no cover
         return super(MyEncoder, self).default(obj)
 
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 app.json_encoder = MyEncoder
 
