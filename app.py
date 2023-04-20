@@ -218,12 +218,16 @@ def getOccTodayAll(locationID):
     week_day = datetime.datetime.now().weekday()
     week_arr =["Mon", "Tues", "Wed", "Thurs", "Fri", "Sat", "Sun"]
     data_json = []
+    time = datetime.datetime.now().hour
 
     if (week_arr[week_day] in daysOpen[locationID]):
         open = daysOpen[locationID][week_arr[week_day]][0]
         close = daysOpen[locationID][week_arr[week_day]][1]
+        
+        if (time > close):
+            time = close
 
-        for i in range(open + 1, close + 1):
+        for i in range(open + 1, time + 1):
             avg = getOccTodayByHour(locationID, i)
             data_json.append({"time" : hours[i - 6], "occupancy" : avg})
 
@@ -244,7 +248,7 @@ def getOccForPopUp(locationID):
         data_json.append({"time" : "Location closed.", "occupancy" : avg})
     else:
         avg = getCurrentOccupancy(locationID)
-        data_json.append({"time" : hours[time - 6], "occupancy" : avg})
+        data_json.append({"time" : "Now", "occupancy" : avg})
 
         if (week_arr[week_day] in daysOpen[locationID]):
             
