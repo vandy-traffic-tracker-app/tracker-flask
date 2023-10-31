@@ -264,12 +264,3 @@ def getOccForPopUp(locationID):
                 data_json.append({"time" : hours[i - 6], "occupancy" : avg})
     
     return json.dumps(data_json)
-
-# Test call below:
-# print(getAverageOccupancyByHourOnWeekday('Rec', 'Sun', 23))
-
-# getCurrentOccupancy(location_id)
-# getOccupancyByHour(locationID, hour)
-# getAverageOccupancy(locationID, weekday, hour)
-# getAverageOccupancy(location_id)
-# getBusyTimes(location_id) 
